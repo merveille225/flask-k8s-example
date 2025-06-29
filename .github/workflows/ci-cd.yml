@@ -10,7 +10,8 @@ jobs:
   build-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       # Étape 1 : Lint Dockerfile
       - name: Lint Dockerfile
@@ -28,3 +29,34 @@ jobs:
       # Étape 3 : Build Docker
       - name: Build Docker image
         run: docker build -t flask-app .
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Scan des dépendances Python (requirements.txt)
+      - name: Scan des dépendances avec Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'requirements.txt'
+          format: 'table'
+          exit-code: '0'
+          output: 'trivy-dependencies-results.txt'
+
+      # Scan de l'image Docker après le build
+      - name: Scan de l'image Docker avec Trivy
+        run: |
+          docker build -t flask-app .
+          trivy image --format table --exit-code 0 --output trivy-image-results.txt flask-app
+
+      # Upload des résultats comme artefacts
+      - name: Upload les rapports de scan
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            trivy-*-results.txt
