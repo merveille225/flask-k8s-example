@@ -1,0 +1,30 @@
+name: Docker Build and Lint
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Étape 1 : Lint Dockerfile
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: Dockerfile
+
+      # Étape 2 : Lint YAML
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint Kubernetes file
+        run: yamllint k8sdeployment.yaml
+
+      # Étape 3 : Build Docker
+      - name: Build Docker image
+        run: docker build -t flask-app .
