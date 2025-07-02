@@ -2,9 +2,9 @@ name: Docker Build, Lint & Security Scan
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-lint:
@@ -41,11 +41,11 @@ jobs:
       - name: Scan des dépendances avec Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: 'requirements.txt'
-          format: 'table'
-          exit-code: '0'
-          output: 'trivy-dependencies-results.txt'
+          scan-type: "fs"
+          scan-ref: "requirements.txt"
+          format: "table"
+          exit-code: "0"
+          output: "trivy-dependencies-results.txt"
 
       # Scan de l'image Docker avec Trivy
       - name: Scan de l'image Docker avec Trivy
@@ -60,3 +60,14 @@ jobs:
           name: security-reports
           path: |
             trivy-*-results.txt
+
+      # Validation des politiques Kubernetes avec Conftest
+      - name: Install Conftest
+        run: |
+          wget https://github.com/open-policy-agent/conftest/releases/download/v0.45.0/conftest_0.45.0_Linux_x86_64.tar.gz
+          tar -xzf conftest_*.tar.gz
+          sudo mv conftest /usr/local/bin/
+
+      - name: Validate Kubernetes config
+        run: |
+          conftest test k8sdeployment.yaml -p policies/ --all-namespaces
